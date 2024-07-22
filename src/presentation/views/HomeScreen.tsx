@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Alert, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Image, Platform } from 'react-native';
-import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
+import { PERMISSIONS, RESULTS, checkMultiple, requestMultiple } from 'react-native-permissions';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { FlashList } from '@shopify/flash-list';
 import ContactListItem from '@presentation/components/ContactListItem';
@@ -27,70 +27,68 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
       ),
     });
-    checkReadContactsPermission();
-  }, [navigation]);
+    checkContactsPermission();
+  }, [navigation,hasPermission]);
 
-  const checkReadContactsPermission = async () => {
+  const checkContactsPermission = async () => {
     try {
-      let osPermission = Platform.OS === 'android' ? PERMISSIONS.ANDROID.READ_CONTACTS : PERMISSIONS.IOS.CONTACTS;
-      const permission = await check(osPermission);
-      if (permission === RESULTS.GRANTED) {
+      let osPermissions = Platform.OS === 'android' ? [PERMISSIONS.ANDROID.READ_CONTACTS,PERMISSIONS.ANDROID.WRITE_CONTACTS] : [PERMISSIONS.IOS.CONTACTS];
+     // Check the statuses of multiple permissions
+    const statuses = await checkMultiple(osPermissions);
+
+    // Check if all required permissions are granted
+    const allGranted = osPermissions.every(permission => statuses[permission] === RESULTS.GRANTED);
+    console.log("all granted", allGranted)
+    if (allGranted) {
+      setHasPermission(true);
+    } 
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+  const requestContactsPermission = async () => {
+   try {
+    let osPermissions = Platform.OS === 'android' 
+      ? [PERMISSIONS.ANDROID.READ_CONTACTS, PERMISSIONS.ANDROID.WRITE_CONTACTS] 
+      : [PERMISSIONS.IOS.CONTACTS];
+
+    // Check the statuses of the permissions
+    const statuses = await checkMultiple(osPermissions);
+    const allGranted = osPermissions.every(permission => statuses[permission] === RESULTS.GRANTED);
+
+    if (!allGranted) {
+      // Request permissions that are not granted
+      const requestStatuses = await requestMultiple(osPermissions);
+      const allRequestGranted = osPermissions.every(permission => requestStatuses[permission] === RESULTS.GRANTED);
+
+      if (allRequestGranted) {
         setHasPermission(true);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const requestReadContactsPermission = async () => {
-    try {
-      let osPermission = Platform.OS === 'android' ? PERMISSIONS.ANDROID.READ_CONTACTS : PERMISSIONS.IOS.CONTACTS;
-      const permission = await check(osPermission);
-      if (permission !== RESULTS.GRANTED) {
-        const result = await request(osPermission);
-        if (result === RESULTS.GRANTED) {
-          setHasPermission(true);
-        } else {
-          Alert.alert("Permission Denied", "Unable to access contacts without permission.");
-        }
       } else {
-        setHasPermission(true);
+        Alert.alert("Permission Denied", "Unable to access contacts without permission.");
+        setHasPermission(false);
       }
-    } catch (error) {
-      console.error(error);
+    } else {
+      setHasPermission(true);
     }
-  };
-
-  const requestWriteContactsPermission = async () => {
-    try {
-      let osPermission = Platform.OS === 'android' ? PERMISSIONS.ANDROID.WRITE_CONTACTS : PERMISSIONS.IOS.CONTACTS;
-      const permission = await check(osPermission);
-      if (permission !== RESULTS.GRANTED) {
-        const result = await request(osPermission);
-        return result === RESULTS.GRANTED;
-      }
-      return true;
-    } catch (error) {
-      console.error(error);
-      return false;
-    }
-  };
+  } catch (error) {
+    console.error("Error requesting contacts permission:", error);
+  }
+};
 
   const handleAddContactPress = async () => {
-    const granted = await requestWriteContactsPermission();
-    if (granted) {
+    if (hasPermission) {
       navigation.navigate('AddContact');
     } else {
-      Alert.alert("Permission Denied", "Unable to add contacts without permission.");
+      Alert.alert("Permission", "Unable to add contacts without permission.");
     }
   };
 
   const handleEditContactPress = async (contact: ContactModel) => {
-    const granted = await requestWriteContactsPermission();
-    if (granted) {
+    if (hasPermission) {
       navigation.navigate('EditContact', { contact });
     } else {
-      Alert.alert("Permission Denied", "Unable to edit contacts without permission.");
+      Alert.alert("Permission", "Unable to edit contacts without permission.");
     }
   };
 
@@ -124,9 +122,9 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         )
       ) : (
         <View style={styles.permissionContainer}>
-          <TouchableOpacity onPress={requestReadContactsPermission} style={styles.permissionButton}>
+          <TouchableOpacity onPress={requestContactsPermission} style={styles.permissionButton}>
             <Image source={{ uri: 'https://img.icons8.com/ios-filled/50/000000/contacts.png' }} style={styles.icon} />
-            <Text style={styles.permissionText}>We need your permission to fetch the contacts</Text>
+            <Text style={styles.permissionText}>We need your permission to fetch/add the contacts</Text>
           </TouchableOpacity>
         </View>
       )}

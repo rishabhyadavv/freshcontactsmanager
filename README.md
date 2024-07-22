@@ -104,13 +104,7 @@ yarn install
 npx pod-install
 ```
 
-4. **Start the development server:**
-
-```sh
-npx react-native start
-```
-
-5. **Run the app:**
+4. **Run the app:**
 
 For iOS:
 ```sh

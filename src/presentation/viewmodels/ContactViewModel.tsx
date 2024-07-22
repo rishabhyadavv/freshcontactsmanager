@@ -59,11 +59,11 @@ export const ContactViewModelProvider: React.FC<ContactViewModelProviderProps> =
   const addContact = async (contact: ContactModel) => {
     try {
       const newContact = await contactOperations.addContact(contact);
-
-      setContacts(prevContacts => [...prevContacts, newContact]);
-      setPagedContacts(prevContacts => [...prevContacts, newContact].slice(0, page * PAGE_SIZE));
+  
+      setContacts(prevContacts => [newContact, ...prevContacts]);
+      setPagedContacts(prevContacts => [newContact, ...prevContacts].slice(0, page * PAGE_SIZE));
     } catch (err) {
-      setError("Error occured");
+      setError("Error occurred");
     }
   };
 
