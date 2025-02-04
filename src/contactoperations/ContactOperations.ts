@@ -9,10 +9,9 @@ export class ContactOperations {
     this.contactRepository = contactRepository;
   }
 
-  static getInstance(): ContactOperations {
+  static getInstance(contactRepository: ContactRepository): ContactOperations {
     if (!ContactOperations.instance) {
-      const repositoryInstance = new ContactRepository();
-      ContactOperations.instance = new ContactOperations(repositoryInstance);
+      ContactOperations.instance = new ContactOperations(contactRepository);
     }
     return ContactOperations.instance;
   }
@@ -26,6 +25,6 @@ export class ContactOperations {
   }
 
   async editContact(contact: ContactModel): Promise<void> {
-    return  this.contactRepository.updateContact(contact);
+    return this.contactRepository.updateContact(contact);
   }
 }

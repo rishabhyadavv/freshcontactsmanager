@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { View, Alert, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Image, Platform } from 'react-native';
-import { PERMISSIONS, RESULTS, checkMultiple, requestMultiple } from 'react-native-permissions';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Alert, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Image } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { FlashList } from '@shopify/flash-list';
-import ContactListItem from '@presentation/components/ContactListItem';
 import { ContactModel } from '@data/models/ContactModel';
 import { RootStackParamList } from '@presentation/navigators/RootNavigator';
 import { useContactViewModel } from '@presentation/viewmodels/ContactViewModel';
+import ContactItem from '@presentation/components/ContactItem'; 
+import useContactsPermission from '@hooks/useContactsPermission';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -15,7 +15,7 @@ type Props = {
 };
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
-  const [hasPermission, setHasPermission] = useState<boolean>(false);
+  const { hasPermission, requestContactsPermission } = useContactsPermission();
   const [viewModelInitialized, setViewModelInitialized] = useState<boolean>(false);
   const contactViewModel = useContactViewModel();
 
@@ -27,54 +27,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
       ),
     });
-    checkContactsPermission();
   }, [navigation,hasPermission]);
 
-  const checkContactsPermission = async () => {
-    try {
-      let osPermissions = Platform.OS === 'android' ? [PERMISSIONS.ANDROID.READ_CONTACTS,PERMISSIONS.ANDROID.WRITE_CONTACTS] : [PERMISSIONS.IOS.CONTACTS];
-     // Check the statuses of multiple permissions
-    const statuses = await checkMultiple(osPermissions);
-
-    // Check if all required permissions are granted
-    const allGranted = osPermissions.every(permission => statuses[permission] === RESULTS.GRANTED);
-    console.log("all granted", allGranted)
-    if (allGranted) {
-      setHasPermission(true);
-    } 
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-  const requestContactsPermission = async () => {
-   try {
-    let osPermissions = Platform.OS === 'android' 
-      ? [PERMISSIONS.ANDROID.READ_CONTACTS, PERMISSIONS.ANDROID.WRITE_CONTACTS] 
-      : [PERMISSIONS.IOS.CONTACTS];
-
-    // Check the statuses of the permissions
-    const statuses = await checkMultiple(osPermissions);
-    const allGranted = osPermissions.every(permission => statuses[permission] === RESULTS.GRANTED);
-
-    if (!allGranted) {
-      // Request permissions that are not granted
-      const requestStatuses = await requestMultiple(osPermissions);
-      const allRequestGranted = osPermissions.every(permission => requestStatuses[permission] === RESULTS.GRANTED);
-
-      if (allRequestGranted) {
-        setHasPermission(true);
-      } else {
-        Alert.alert("Permission Denied", "Unable to access contacts without permission.");
-        setHasPermission(false);
-      }
-    } else {
-      setHasPermission(true);
-    }
-  } catch (error) {
-    console.error("Error requesting contacts permission:", error);
-  }
-};
 
   const handleAddContactPress = async () => {
     if (hasPermission) {
@@ -84,13 +38,17 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const handleEditContactPress = async (contact: ContactModel) => {
+  const handleEditContactPress = useCallback((contact: ContactModel) => {
     if (hasPermission) {
       navigation.navigate('EditContact', { contact });
     } else {
-      Alert.alert("Permission", "Unable to edit contacts without permission.");
+      Alert.alert('Permission', 'Unable to edit contacts without permission.');
     }
-  };
+  }, [hasPermission, navigation]);
+  
+  const renderContact = useCallback(({ item }) => {
+    return <ContactItem contact={item} onEdit={handleEditContactPress} />;
+  }, [handleEditContactPress]);
 
   useEffect(() => {
     if (hasPermission && !viewModelInitialized) {
@@ -108,12 +66,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <FlashList
             data={contactViewModel.contacts}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.contactItem}>
-                <ContactListItem contact={item} onEdit={handleEditContactPress} />
-                <Image source={{ uri: 'https://img.icons8.com/ios-filled/50/000000/chevron-right.png' }} style={styles.arrowIcon} />
-              </View>
-            )}
+            renderItem={renderContact}
             estimatedItemSize={50}
             onEndReached={() => contactViewModel.loadMoreContacts()}
             onEndReachedThreshold={0.5}

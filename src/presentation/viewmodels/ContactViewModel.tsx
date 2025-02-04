@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { ContactModel } from '@data/models/ContactModel';
 import { ContactOperations } from '@contactoperations/ContactOperations';
+import { ContactRepository } from '@data/repositories/ContactRepository';
 
 interface ContactViewModel {
   contacts: ContactModel[];
@@ -27,7 +28,7 @@ export const useContactViewModel = () => {
 };
 
 export const ContactViewModelProvider: React.FC<ContactViewModelProviderProps> = ({ children }) => {
-  const contactOperations = ContactOperations.getInstance();
+  const contactOperations = ContactOperations.getInstance(new ContactRepository());
   const [contacts, setContacts] = useState<ContactModel[]>([]);
   const [pagedContacts, setPagedContacts] = useState<ContactModel[]>([]);
   const [page, setPage] = useState(1);
