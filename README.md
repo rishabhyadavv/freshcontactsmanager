@@ -1,10 +1,6 @@
-Here's a comprehensive README file for your React Native contact manager app. This file will include an overview, setup instructions, dependencies, architecture, and usage details.
-
----
-
 # Contact Manager App
 
-This is a React Native contact manager app that allows users to sync their phone contacts, add new contacts, view and edit existing contacts, and handle contact photos. The app follows the MVVM architecture and adheres to SOLID principles.
+This is a React Native contact manager app that allows users to sync their phone contacts, add new contacts, view and edit existing contacts, and handle contact photos. The app follows the MVVM architecture.
 
 ## Table of Contents
 
@@ -25,7 +21,7 @@ This is a React Native contact manager app that allows users to sync their phone
 - Add new contacts with name, email, phone number, and photo.
 - View and edit existing contacts.
 - Validate German phone numbers.
-- Follow MVVM architecture and SOLID principles.
+- Follow MVVM architecture.
 
 ## Dependencies
 
@@ -70,7 +66,6 @@ The project follows a structured and modular approach:
 │   │   └── validators.ts
 │   ├── App.tsx
 │   └── index.ts
-└── README.md
 ```
 
 ## Setup Instructions
